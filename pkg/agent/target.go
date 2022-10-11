@@ -3,16 +3,16 @@ package agent
 import (
 	"context"
 	"github.com/sirupsen/logrus"
-	"github.com/toolkits/pkg/net/gobrpc"
 	"probermesh/config"
 	"probermesh/pkg/pb"
 	"time"
 )
 
 type targetManager struct {
-	r               *gobrpc.RPCClient
+	r               *rpcCli
 	targets         map[string][]*config.ProberConfig
 	refreshInterval time.Duration
+	syncInterval    time.Duration
 	currents        map[string]*proberJob
 
 	ready chan struct{}
@@ -20,14 +20,11 @@ type targetManager struct {
 
 var tm *targetManager
 
-func GetTM() *targetManager {
-	return tm
-}
-
-func initTargetManager(interval int, r *gobrpc.RPCClient) *targetManager {
+func initTargetManager(pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
-		refreshInterval: time.Duration(interval) * time.Second,
+		refreshInterval: pInterval,
+		syncInterval:    sInterval,
 		r:               r,
 		ready:           make(chan struct{}),
 		currents:        make(map[string]*proberJob),
@@ -37,7 +34,7 @@ func initTargetManager(interval int, r *gobrpc.RPCClient) *targetManager {
 
 func (t *targetManager) start(ctx context.Context) {
 	// 定时获取targets
-	go t.refresh(ctx)
+	go t.sync(ctx)
 
 	<-t.ready
 
@@ -69,7 +66,7 @@ func (t *targetManager) prober() {
 	}
 }
 
-func (t *targetManager) refresh(ctx context.Context) {
+func (t *targetManager) sync(ctx context.Context) {
 	t.getTargets()
 	close(t.ready)
 
@@ -77,7 +74,7 @@ func (t *targetManager) refresh(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(t.refreshInterval):
+		case <-time.After(t.syncInterval):
 			t.getTargets()
 		}
 	}
@@ -85,7 +82,7 @@ func (t *targetManager) refresh(ctx context.Context) {
 
 func (t *targetManager) getTargets() {
 	resp := new(pb.TargetPoolResp)
-	err := t.r.Call(
+	err := t.r.Get().Call(
 		"Server.GetTargetPool",
 		pb.TargetPoolReq{SourceRegion: "cn-shanghai"},
 		resp,
@@ -96,10 +93,4 @@ func (t *targetManager) getTargets() {
 	}
 
 	t.targets = resp.Targets
-
-	//for region, tg := range t.targets {
-	//	for _, tt := range tg {
-	//		fmt.Println(region, tt.ProberType, tt.Targets)
-	//	}
-	//}
 }

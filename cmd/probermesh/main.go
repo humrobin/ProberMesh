@@ -18,10 +18,13 @@ const projectName = "ProberMesh"
 
 var (
 	configPath string
-	mode       string
-	serverAddr string
-	h          bool
-	v          bool
+
+	mode           string
+	serverAddr     string
+	proberInterval string
+	syncInterval   string
+	h              bool
+	v              bool
 )
 
 func init() {
@@ -114,8 +117,11 @@ func initLog() {
 
 func initArgs() {
 	flag.StringVar(&configPath, "config.file", "prober_mesh.yaml", "指定config path")
+
 	flag.StringVar(&mode, "mode", "server", "服务模式, agent/server")
-	flag.StringVar(&serverAddr, "rpc.server.addr", "", "server rpc地址")
+	flag.StringVar(&serverAddr, "rpc.server.addr", "localhost:6000", "server rpc地址")
+	flag.StringVar(&proberInterval, "prober.interval", "15s", "探测间隔")
+	flag.StringVar(&syncInterval, "sync.interval", "5m", "同步 rpc server 间隔")
 	flag.BoolVar(&v, "v", false, "版本信息")
 	flag.BoolVar(&h, "h", false, "帮助信息")
 	flag.Parse()
@@ -135,7 +141,7 @@ func main() {
 	switch mode {
 	case "agent":
 		logrus.Warnln("build agent mode")
-		agent.BuildAgentMode(serverAddr)
+		agent.BuildAgentMode(serverAddr, proberInterval, syncInterval)
 	case "server":
 		logrus.Warnln("build server mode")
 		server.BuildServerMode(configPath)

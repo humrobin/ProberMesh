@@ -3,11 +3,14 @@ package server
 import (
 	"context"
 	"github.com/oklog/run"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"os"
 	"os/signal"
 	"probermesh/config"
 	"syscall"
+	"time"
 )
 
 func BuildServerMode(configPath string) {
@@ -38,8 +41,44 @@ func BuildServerMode(configPath string) {
 	{
 		// 初始化targetsPool
 		g.Add(func() error {
-			initTargetsPool(ctxAll,cfg).start()
+			initTargetsPool(ctxAll, cfg).start()
 			return nil
+		}, func(err error) {
+			cancelAll()
+		})
+	}
+
+	{
+		// aggregation
+		agg := NewAggregator(ctxAll, 10*time.Second)
+		g.Add(func() error {
+			agg.startAggregation()
+			return nil
+		}, func(err error) {
+			cancelAll()
+		})
+	}
+
+	{
+		// http server
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		svc := http.Server{
+			Addr:    cfg.HTTPListenAddr,
+			Handler: mux,
+		}
+
+		errCh := make(chan error)
+		go func() {
+			errCh <- svc.ListenAndServe()
+		}()
+
+		g.Add(func() error {
+			select {
+			case <-errCh:
+			case <-ctxAll.Done():
+			}
+			return svc.Shutdown(context.TODO())
 		}, func(err error) {
 			cancelAll()
 		})

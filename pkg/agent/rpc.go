@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bufio"
+	"context"
 	"github.com/sirupsen/logrus"
 	"github.com/toolkits/pkg/net/gobrpc"
 	"github.com/ugorji/go/codec"
@@ -15,11 +16,28 @@ import (
 type rpcCli struct {
 	cli        *gobrpc.RPCClient
 	serverAddr string
+
+	cancel context.Context
 }
 
-func initRpcCli(addr string) *rpcCli {
-	return &rpcCli{
+func initRpcCli(ctx context.Context, addr string) *rpcCli {
+	rc := &rpcCli{
 		serverAddr: addr,
+		cancel:     ctx,
+	}
+
+	return rc
+}
+
+func (r *rpcCli) Get() *gobrpc.RPCClient {
+	for {
+		cli, err := r.getCli()
+		if err == nil && cli != nil {
+			return cli
+		}
+
+		// TODO 当svc断开后，agent无法重试
+		time.Sleep(5 * time.Second)
 	}
 }
 

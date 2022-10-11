@@ -1,19 +1,24 @@
 rpc_listen_addr: 0.0.0.0:6000
 
-http_listen_addr: localhost:6001
+http_listen_addr: 0.0.0.0:6001
 
 prober_configs:
   - prober_type: http
     region: cn-beijing
     targets:
-      - 180.101.49.12
-      - 180.101.49.12
+      - https://www.baidu.com
+      - www.taobao.com
+  - prober_type: http
+    region: cn-chengdu
+    targets:
+      - https://www.baidu.com
+      - www.taobao.com
   - prober_type: icmp
     region: cn-hangzhou
     targets:
       - 180.101.49.12
-      - 180.101.49.12
+      - 180.101.49.13
   - prober_type: icmp
     region: cn-shanghai
     targets:
-      - 180.101.49.12
+      - 8.8.8.8

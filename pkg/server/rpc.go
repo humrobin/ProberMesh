@@ -2,7 +2,6 @@ package server
 
 import (
 	"bufio"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/ugorji/go/codec"
 	"io"
@@ -16,7 +15,6 @@ import (
 type Server struct{}
 
 func (s *Server) Report(req pb.PingReq, resp *string) error {
-	fmt.Println(req)
 	msg := "success"
 	resp = &msg
 	return nil
@@ -25,6 +23,11 @@ func (s *Server) Report(req pb.PingReq, resp *string) error {
 func (s *Server) GetTargetPool(req pb.TargetPoolReq, resp *pb.TargetPoolResp) error {
 	tcs := GetTP().GetPool(req.SourceRegion)
 	resp.Targets = tcs
+	return nil
+}
+
+func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) error {
+	aggregator.Enqueue(reqs)
 	return nil
 }
 
