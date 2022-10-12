@@ -21,8 +21,9 @@ type Aggregator struct {
 }
 
 type aggProberResult struct {
-	sourceRegion, targetRegion string
-	batchCnt                   int64
+	sourceRegion, targetRegion string // icmp 使用
+	targetAddr                 string // http 使用
+	batchCnt                   int64  // cnt算avg
 
 	failedCnt int64
 	phase     map[string]float64
@@ -104,6 +105,7 @@ func (a *Aggregator) agg() {
 				containers[key] = &aggProberResult{
 					sourceRegion: pr.SourceRegion,
 					targetRegion: pr.TargetRegion,
+					targetAddr:   pr.ProberTarget,
 					phase:        make(map[string]float64),
 				}
 			}
@@ -129,7 +131,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for _, agg := range http {
 		httpProberFailedGaugeVec.WithLabelValues(
 			agg.sourceRegion,
-			agg.targetRegion,
+			agg.targetAddr,
 		).Set(float64(agg.failedCnt))
 
 		for stage, total := range agg.phase {
@@ -137,7 +139,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			httpProberDurationGaugeVec.WithLabelValues(
 				stage,
 				agg.sourceRegion,
-				agg.targetRegion,
+				agg.targetAddr,
 			).Set(total / float64(agg.batchCnt))
 		}
 	}

@@ -18,12 +18,12 @@ var (
 	httpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "prober_http_failed",
 		Help: "http prober failed times",
-	}, []string{"source_region", "target_region"})
+	}, []string{"source_region", "target_addr"})
 
 	httpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "prober_http_duration_seconds",
 		Help: "http prober duration by phase",
-	}, []string{"phase", "source_region", "target_region"})
+	}, []string{"phase", "source_region", "target_addr"})
 )
 
 func init() {
