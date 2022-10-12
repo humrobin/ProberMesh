@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/alecthomas/units"
 	"github.com/prometheus/common/config"
 	pconfig "github.com/prometheus/common/config"
 	"github.com/sirupsen/logrus"
@@ -56,6 +57,7 @@ type HTTPProbe struct {
 	Body                         string                  `yaml:"body,omitempty"`
 	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,inline"`
 	Compression                  string                  `yaml:"compression,omitempty"`
+	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
 
 func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
@@ -65,6 +67,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			IPProtocolFallback: true,
 			HTTPClientConfig:   config.DefaultHTTPClientConfig,
 			IPProtocol:         "ip4",
+			ValidStatusCodes:   []int{200},
 		}
 
 		defaultHTTPPorberResultReq = &pb.PorberResultReq{
@@ -276,9 +279,9 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		//// This will read up to BodySizeLimit bytes from the body, and return an error if the response is
 		//// larger. It forwards the Close call to the original resp.Body to make sure the TCP connection is
 		//// correctly shut down. The limit is applied _after decompression_ if applicable.
-		//if httpConfig.BodySizeLimit > 0 {statusCodeGauge
-		//	resp.Body = http.MaxBytesReader(nil, resp.Body, int64(httpConfig.BodySizeLimit))
-		//}
+		if httpConfig.BodySizeLimit > 0 {
+			resp.Body = http.MaxBytesReader(nil, resp.Body, int64(httpConfig.BodySizeLimit))
+		}
 
 		byteCounter := &byteCounter{ReadCloser: resp.Body}
 
@@ -379,7 +382,9 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		success = false
 	}
 
-	//fmt.Debugln(resp.StatusCode, "这里是状态码")
-	defaultHTTPPorberResultReq.ProberSuccess = true
+
+	if success {
+		defaultHTTPPorberResultReq.ProberSuccess = true
+	}
 	return defaultHTTPPorberResultReq
 }

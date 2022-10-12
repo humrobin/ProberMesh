@@ -91,16 +91,18 @@ func (a *Aggregator) agg() {
 			var (
 				containers map[string]*aggProberResult
 				phase      map[string]float64
+				key        string
 			)
 			if pr.ProberType == "http" {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
+				key = pr.SourceRegion + defaultKeySeparator + pr.ProberTarget
 			} else {
 				containers = icmpAggMap
 				phase = pr.ICMPDurations
+				key = pr.SourceRegion + defaultKeySeparator + pr.TargetRegion
 			}
 
-			key := pr.SourceRegion + defaultKeySeparator + pr.TargetRegion
 			if _, ok := containers[key]; !ok {
 				containers[key] = &aggProberResult{
 					sourceRegion: pr.SourceRegion,

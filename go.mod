@@ -3,6 +3,7 @@ module probermesh
 go 1.17
 
 require (
+	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d
 	github.com/andybalholm/brotli v1.0.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/oklog/run v1.1.0

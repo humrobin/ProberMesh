@@ -6,21 +6,21 @@ prober_configs:
   - prober_type: http
     region: cn-beijing
     targets:
-      - https://www.baidu.com
-      - www.taobao.com
+      - http://www.baidu.com
+      - http://www.taobao.com
       - http://test.com
   - prober_type: http
     region: cn-chengdu
     targets:
-      - https://www.baidu.com
+      - www.baidu.com
       - www.taobao.com
-  - prober_type: icmp
-    region: cn-hangzhou
-    targets:
-      - 180.101.49.12
-      - 99.99.99.124
-      - 99.99.99.123
-  - prober_type: icmp
-    region: cn-shanghai
-    targets:
-      - 8.8.8.8
+#  - prober_type: icmp
+#    region: cn-hangzhou
+#    targets:
+#      - 180.101.49.12
+#      - 99.99.99.124
+#      - 99.99.99.123
+#  - prober_type: icmp
+#    region: cn-shanghai
+#    targets:
+#      - 8.8.8.8
