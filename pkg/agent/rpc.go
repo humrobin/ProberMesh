@@ -29,16 +29,27 @@ func initRpcCli(ctx context.Context, addr string) *rpcCli {
 	return rc
 }
 
-func (r *rpcCli) Get() *gobrpc.RPCClient {
-	for {
-		cli, err := r.getCli()
-		if err == nil && cli != nil {
-			return cli
+func (r *rpcCli) Call(sn string, req, resp interface{}) error {
+	if cli := r.get(); cli != nil {
+		if err := cli.Call(
+			sn,
+			req,
+			resp,
+		); err != nil {
+			logrus.Errorln("rpc call failed ", sn)
+			r.closeCli()
+			return err
 		}
-
-		// TODO 当svc断开后，agent无法重试
-		time.Sleep(5 * time.Second)
 	}
+	return nil
+}
+
+func (r *rpcCli) get() *gobrpc.RPCClient {
+	cli, err := r.getCli()
+	if err == nil && cli != nil {
+		return cli
+	}
+	return nil
 }
 
 func (r *rpcCli) getCli() (*gobrpc.RPCClient, error) {

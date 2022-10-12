@@ -9,8 +9,8 @@ import (
 	"os"
 	"os/signal"
 	"probermesh/config"
+	"probermesh/pkg/util"
 	"syscall"
-	"time"
 )
 
 func BuildServerMode(configPath string) {
@@ -50,9 +50,13 @@ func BuildServerMode(configPath string) {
 
 	{
 		// aggregation
-		agg := NewAggregator(ctxAll, 10*time.Second)
 		g.Add(func() error {
-			agg.startAggregation()
+			aggD, err := util.ParseDuration(cfg.AggregationInterval)
+			if err != nil {
+				logrus.Errorln("agg interval parse failed ", err)
+				return err
+			}
+			NewAggregator(ctxAll, aggD).startAggregation()
 			return nil
 		}, func(err error) {
 			cancelAll()

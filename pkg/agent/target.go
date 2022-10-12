@@ -14,13 +14,14 @@ type targetManager struct {
 	refreshInterval time.Duration
 	syncInterval    time.Duration
 	currents        map[string]*proberJob
+	selfRegion      string
 
 	ready chan struct{}
 }
 
 var tm *targetManager
 
-func initTargetManager(pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
+func NewTargetManager(pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
 		refreshInterval: pInterval,
@@ -28,6 +29,7 @@ func initTargetManager(pInterval, sInterval time.Duration, r *rpcCli) *targetMan
 		r:               r,
 		ready:           make(chan struct{}),
 		currents:        make(map[string]*proberJob),
+		selfRegion:      getSelfRegion(),
 	}
 	return tm
 }
@@ -56,7 +58,7 @@ func (t *targetManager) prober() {
 			pj := &proberJob{
 				proberType:   tt.ProberType,
 				targets:      tt.Targets,
-				sourceRegion: "cn-shanghai",
+				sourceRegion: t.selfRegion,
 				targetRegion: region,
 				r:            t.r,
 			}
@@ -82,9 +84,9 @@ func (t *targetManager) sync(ctx context.Context) {
 
 func (t *targetManager) getTargets() {
 	resp := new(pb.TargetPoolResp)
-	err := t.r.Get().Call(
+	err := t.r.Call(
 		"Server.GetTargetPool",
-		pb.TargetPoolReq{SourceRegion: "cn-shanghai"},
+		pb.TargetPoolReq{SourceRegion: t.selfRegion},
 		resp,
 	)
 	if err != nil {

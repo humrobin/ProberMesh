@@ -18,13 +18,11 @@ const projectName = "ProberMesh"
 
 var (
 	configPath string
+	mode       string
 
-	mode           string
-	serverAddr     string
-	proberInterval string
-	syncInterval   string
-	h              bool
-	v              bool
+	agentOption = new(agent.ProberMeshAgentOption)
+	h           bool
+	v           bool
 )
 
 func init() {
@@ -119,9 +117,9 @@ func initArgs() {
 	flag.StringVar(&configPath, "config.file", "prober_mesh.yaml", "指定config path")
 
 	flag.StringVar(&mode, "mode", "server", "服务模式, agent/server")
-	flag.StringVar(&serverAddr, "rpc.server.addr", "localhost:6000", "server rpc地址")
-	flag.StringVar(&proberInterval, "prober.interval", "15s", "探测间隔")
-	flag.StringVar(&syncInterval, "sync.interval", "5m", "同步 rpc server 间隔")
+	flag.StringVar(&agentOption.Addr, "rpc.server.addr", "localhost:6000", "server rpc地址")
+	flag.StringVar(&agentOption.PInterval, "prober.interval", "15s", "探测间隔")
+	flag.StringVar(&agentOption.SInterval, "sync.interval", "5m", "同步 Server 间隔")
 	flag.BoolVar(&v, "v", false, "版本信息")
 	flag.BoolVar(&h, "h", false, "帮助信息")
 	flag.Parse()
@@ -141,11 +139,11 @@ func main() {
 	switch mode {
 	case "agent":
 		logrus.Warnln("build agent mode")
-		agent.BuildAgentMode(serverAddr, proberInterval, syncInterval)
+		agent.BuildAgentMode(agentOption)
 	case "server":
 		logrus.Warnln("build server mode")
 		server.BuildServerMode(configPath)
 	default:
-		logrus.Fatal("mode must in agent/server")
+		logrus.Fatal("mode must be set and in agent/server")
 	}
 }

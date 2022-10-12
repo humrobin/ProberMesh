@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
 	"sync"
@@ -63,11 +62,11 @@ func (a *Aggregator) startAggregation() {
 }
 
 func (a *Aggregator) agg() {
-	fmt.Println("进行聚合了 ", len(a.queue))
 	if len(a.queue) == 0 {
 		logrus.Warnln("current batch no agent report, continue...")
 		return
 	}
+	logrus.Warnln("has batch report to agg ", len(a.queue))
 
 	var (
 		/*
@@ -128,7 +127,6 @@ func (a *Aggregator) agg() {
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for _, agg := range http {
-		fmt.Println("aaa ", agg)
 		httpProberFailedGaugeVec.WithLabelValues(
 			agg.sourceRegion,
 			agg.targetRegion,

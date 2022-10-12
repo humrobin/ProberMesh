@@ -96,11 +96,11 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			logrus.Errorln("msg", "Error parsing source ip address", "srcIP", module.SourceIPAddress)
 			return defaultICMPPorberResultReq
 		}
-		logrus.Println("msg", "Using source address", "srcIP", srcIP)
+		logrus.Debugln("msg", "Using source address", "srcIP", srcIP)
 	}
 
 	setupStart := time.Now()
-	logrus.Println("msg", "Creating socket")
+	logrus.Debugln("msg", "Creating socket")
 
 	privileged := true
 	// Unprivileged sockets are supported on Darwin and Linux only.
@@ -118,7 +118,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			// "udp" here means unprivileged -- not the protocol "udp".
 			icmpConn, err = icmp.ListenPacket("udp6", srcIP.String())
 			if err != nil {
-				logrus.Println("msg", "Unable to do unprivileged listen on socket, will attempt privileged", "err", err)
+				logrus.Debugln("msg", "Unable to do unprivileged listen on socket, will attempt privileged", "err", err)
 			} else {
 				privileged = false
 			}
@@ -135,7 +135,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		defer icmpConn.Close()
 
 		if err := icmpConn.IPv6PacketConn().SetControlMessage(ipv6.FlagHopLimit, true); err != nil {
-			logrus.Println("msg", "Failed to set Control Message for retrieving Hop Limit", "err", err)
+			logrus.Debugln("msg", "Failed to set Control Message for retrieving Hop Limit", "err", err)
 			hopLimitFlagSet = false
 		}
 	} else {
@@ -164,14 +164,14 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			defer v4RawConn.Close()
 
 			if err := v4RawConn.SetControlMessage(ipv4.FlagTTL, true); err != nil {
-				logrus.Println("msg", "Failed to set Control Message for retrieving TTL", "err", err)
+				logrus.Debugln("msg", "Failed to set Control Message for retrieving TTL", "err", err)
 				hopLimitFlagSet = false
 			}
 		} else {
 			if tryUnprivileged {
 				icmpConn, err = icmp.ListenPacket("udp4", srcIP.String())
 				if err != nil {
-					logrus.Println("msg", "Unable to do unprivileged listen on socket, will attempt privileged", "err", err)
+					logrus.Debugln("msg", "Unable to do unprivileged listen on socket, will attempt privileged", "err", err)
 				} else {
 					privileged = false
 				}
@@ -187,7 +187,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			defer icmpConn.Close()
 
 			if err := icmpConn.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true); err != nil {
-				logrus.Println("msg", "Failed to set Control Message for retrieving TTL", "err", err)
+				logrus.Debugln("msg", "Failed to set Control Message for retrieving TTL", "err", err)
 				hopLimitFlagSet = false
 			}
 		}
@@ -212,7 +212,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		Data: data,
 	}
 
-	logrus.Println("msg", "Creating ICMP packet", "seq", body.Seq, "id", body.ID)
+	logrus.Debugln("msg", "Creating ICMP packet", "seq", body.Seq, "id", body.ID)
 	wm := icmp.Message{
 		Type: requestType,
 		Code: 0,
@@ -226,7 +226,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	}
 
 	defaultICMPPorberResultReq.ICMPDurations["setup"] = time.Since(setupStart).Seconds()
-	logrus.Println("msg", "Writing out packet")
+	logrus.Debugln("msg", "Writing out packet")
 
 	rttStart := time.Now()
 
@@ -234,11 +234,11 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		ttl := module.TTL
 		if ttl > 0 {
 			if c4 := icmpConn.IPv4PacketConn(); c4 != nil {
-				logrus.Println("msg", "Setting TTL (IPv4 unprivileged)", "ttl", ttl)
+				logrus.Debugln("msg", "Setting TTL (IPv4 unprivileged)", "ttl", ttl)
 				c4.SetTTL(ttl)
 			}
 			if c6 := icmpConn.IPv6PacketConn(); c6 != nil {
-				logrus.Println("msg", "Setting TTL (IPv6 unprivileged)", "ttl", ttl)
+				logrus.Debugln("msg", "Setting TTL (IPv6 unprivileged)", "ttl", ttl)
 				c6.SetHopLimit(ttl)
 			}
 		}
@@ -246,7 +246,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	} else {
 		ttl := defaultICMPTTL
 		if module.TTL > 0 {
-			logrus.Println("msg", "Overriding TTL (raw IPv4)", "ttl", ttl)
+			logrus.Debugln("msg", "Overriding TTL (raw IPv4)", "ttl", ttl)
 			ttl = module.TTL
 		}
 		// Only for IPv4 raw. Needed for setting DontFragment flag.
@@ -301,7 +301,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		logrus.Errorln("msg", "Error setting socket deadline", "err", err)
 		return defaultICMPPorberResultReq
 	}
-	logrus.Println("msg", "Waiting for reply packets")
+	logrus.Debugln("msg", "Waiting for reply packets")
 	for {
 		var n int
 		var peer net.Addr
@@ -315,7 +315,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			if cm != nil && hopLimitFlagSet {
 				hopLimit = float64(cm.HopLimit)
 			} else {
-				logrus.Println("msg", "Cannot get Hop Limit from the received packet. 'probe_icmp_reply_hop_limit' will be missing.")
+				logrus.Debugln("msg", "Cannot get Hop Limit from the received packet. 'probe_icmp_reply_hop_limit' will be missing.")
 			}
 		} else {
 			var cm *ipv4.ControlMessage
@@ -335,7 +335,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 				// Not really Hop Limit, but it is in practice.
 				hopLimit = float64(cm.TTL)
 			} else {
-				logrus.Println("msg", "Cannot get TTL from the received packet. 'probe_icmp_reply_hop_limit' will be missing.")
+				logrus.Debugln("msg", "Cannot get TTL from the received packet. 'probe_icmp_reply_hop_limit' will be missing.")
 			}
 		}
 		if err != nil {
@@ -363,9 +363,9 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		if bytes.Equal(rb[:n], wb) {
 			defaultICMPPorberResultReq.ICMPDurations["rtt"] = time.Since(rttStart).Seconds()
 			if hopLimit >= 0 {
-				logrus.Println("Replied packet hop limit (TTL for ipv4): ", hopLimit)
+				logrus.Debugln("Replied packet hop limit (TTL for ipv4): ", hopLimit)
 			}
-			logrus.Println("msg", "Found matching reply packet")
+			logrus.Debugln("msg", "Found matching reply packet")
 			defaultICMPPorberResultReq.ProberSuccess = true
 			return defaultICMPPorberResultReq
 		}

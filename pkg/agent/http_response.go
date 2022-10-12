@@ -56,7 +56,6 @@ type HTTPProbe struct {
 	Body                         string                  `yaml:"body,omitempty"`
 	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,inline"`
 	Compression                  string                  `yaml:"compression,omitempty"`
-	//BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
 
 func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
@@ -141,10 +140,10 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	client.Transport = tt
 
 	client.CheckRedirect = func(r *http.Request, via []*http.Request) error {
-		logrus.Println("msg", "Received redirect", "location", r.Response.Header.Get("Location"))
+		logrus.Debugln("msg", "Received redirect", "location", r.Response.Header.Get("Location"))
 		redirects = len(via)
 		if redirects > 10 || !httpConfig.HTTPClientConfig.FollowRedirects {
-			logrus.Println("msg", "Not following redirect")
+			logrus.Debugln("msg", "Not following redirect")
 			return errors.New("don't follow redirects")
 		}
 		return nil
@@ -221,11 +220,12 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		resp = &http.Response{}
 		if err != nil {
 			logrus.Errorln("msg", "Error for HTTP request", "err", err)
+			return defaultHTTPPorberResultReq
 		}
 	} else {
 		requestErrored := (err != nil)
 
-		logrus.Println("msg", "Received HTTP response", "status_code", resp.StatusCode)
+		logrus.Debugln("msg", "Received HTTP response", "status_code", resp.StatusCode)
 		if len(httpConfig.ValidStatusCodes) != 0 {
 			for _, code := range httpConfig.ValidStatusCodes {
 				if resp.StatusCode == code {
@@ -234,13 +234,13 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 				}
 			}
 			if !success {
-				logrus.Println("msg", "Invalid HTTP response status code", "status_code", resp.StatusCode,
+				logrus.Debugln("msg", "Invalid HTTP response status code", "status_code", resp.StatusCode,
 					"valid_status_codes", fmt.Sprintf("%v", httpConfig.ValidStatusCodes))
 			}
 		} else if 200 <= resp.StatusCode && resp.StatusCode < 300 {
 			success = true
 		} else {
-			logrus.Println("msg", "Invalid HTTP response status code, wanted 2xx", "status_code", resp.StatusCode)
+			logrus.Debugln("msg", "Invalid HTTP response status code, wanted 2xx", "status_code", resp.StatusCode)
 		}
 
 		if success && (len(httpConfig.FailIfHeaderMatchesRegexp) > 0 || len(httpConfig.FailIfHeaderNotMatchesRegexp) > 0) {
@@ -253,7 +253,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		if httpConfig.Compression != "" {
 			dec, err := getDecompressionReader(httpConfig.Compression, resp.Body)
 			if err != nil {
-				logrus.Println("msg", "Failed to get decompressor for HTTP response body", "err", err)
+				logrus.Debugln("msg", "Failed to get decompressor for HTTP response body", "err", err)
 				success = false
 			} else if dec != nil {
 				// Since we are replacing the original resp.Body with the decoder, we need to make sure
@@ -264,7 +264,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 					if err != nil {
 						// At this point we cannot really do anything with this error, but log
 						// it in case it contains useful information as to what's the problem.
-						logrus.Println("msg", "Error while closing response from server", "err", err)
+						logrus.Debugln("msg", "Error while closing response from server", "err", err)
 					}
 				}(resp.Body)
 
@@ -284,13 +284,13 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 
 		if success && (len(httpConfig.FailIfBodyMatchesRegexp) > 0 || len(httpConfig.FailIfBodyNotMatchesRegexp) > 0) {
 			success = matchRegularExpressions(byteCounter, httpConfig)
-			logrus.Println("probeFailedDueToRegex ", success)
+			logrus.Debugln("probeFailedDueToRegex ", success)
 		}
 
 		if !requestErrored {
 			_, err = io.Copy(io.Discard, byteCounter)
 			if err != nil {
-				logrus.Println("msg", "Failed to read HTTP response body", "err", err)
+				logrus.Debugln("msg", "Failed to read HTTP response body", "err", err)
 				success = false
 			}
 
@@ -298,7 +298,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 				// We have already read everything we could from the server, maybe even uncompressed the
 				// body. The error here might be either a decompression error or a TCP error. Log it in
 				// case it contains useful information as to what's the problem.
-				logrus.Println("msg", "Error while closing response from server", "error", err.Error())
+				logrus.Debugln("msg", "Error while closing response from server", "error", err.Error())
 			}
 		}
 
@@ -327,7 +327,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	tt.mu.Lock()
 	defer tt.mu.Unlock()
 	for i, trace := range tt.traces {
-		logrus.Println(
+		logrus.Debugln(
 			"msg", "Response timings for roundtrip",
 			"roundtrip", i,
 			"start", trace.start,
@@ -379,7 +379,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		success = false
 	}
 
-	//fmt.Println(resp.StatusCode, "这里是状态码")
+	//fmt.Debugln(resp.StatusCode, "这里是状态码")
 	defaultHTTPPorberResultReq.ProberSuccess = true
 	return defaultHTTPPorberResultReq
 }

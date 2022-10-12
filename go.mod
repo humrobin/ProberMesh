@@ -6,6 +6,7 @@ require (
 	github.com/andybalholm/brotli v1.0.4
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/oklog/run v1.1.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/prometheus/common v0.37.0
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.0
@@ -25,7 +26,6 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect

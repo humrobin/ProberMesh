@@ -8,18 +8,22 @@ import (
 	"probermesh/pkg/util"
 )
 
-func BuildAgentMode(addr string, pInterval, sInterval string) {
-	if len(addr) == 0 {
+type ProberMeshAgentOption struct {
+	Addr, PInterval, SInterval string
+}
+
+func BuildAgentMode(ao *ProberMeshAgentOption) {
+	if len(ao.Addr) == 0 {
 		log.Fatal("server addr must be set")
 	}
 
-	pDuration, err := util.ParseDuration(pInterval)
+	pDuration, err := util.ParseDuration(ao.PInterval)
 	if err != nil {
 		logrus.Errorln("parse prober duration flag failed ", err)
 		return
 	}
 
-	sDuration, err := util.ParseDuration(sInterval)
+	sDuration, err := util.ParseDuration(ao.SInterval)
 	if err != nil {
 		logrus.Errorln("parse sync duration flag failed ", err)
 		return
@@ -27,7 +31,7 @@ func BuildAgentMode(addr string, pInterval, sInterval string) {
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
 
-	cli := initRpcCli(ctxAll,addr)
+	cli := initRpcCli(ctxAll, ao.Addr)
 
 	if err != nil {
 		logrus.Errorln("agent get cli failed ", err)
@@ -37,7 +41,7 @@ func BuildAgentMode(addr string, pInterval, sInterval string) {
 	var g run.Group
 	{
 		// 定时拉取mesh poll
-		manager := initTargetManager(pDuration, sDuration, cli)
+		manager := NewTargetManager(pDuration, sDuration, cli)
 		g.Add(func() error {
 			manager.start(ctxAll)
 			return nil

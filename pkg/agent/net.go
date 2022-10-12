@@ -1,6 +1,11 @@
 package agent
 
-import "net"
+import (
+	"context"
+	"net"
+	"os/exec"
+	"time"
+)
 
 func getLocalIP() string {
 	var (
@@ -26,4 +31,22 @@ func getLocalIP() string {
 		}
 	}
 	return "0.0.0.0"
+}
+
+func getSelfRegion() string {
+	var defaultRegion = "cn-shanghai"
+
+	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(1)*time.Second)
+	cmd := exec.CommandContext(
+		ctx,
+		"bash",
+		"-c",
+		"curl -s http://100.100.100.200/latest/meta-data/region-id",
+	)
+
+	bs, err := cmd.CombinedOutput()
+	if err != nil {
+		return defaultRegion
+	}
+	return string(bs)
 }

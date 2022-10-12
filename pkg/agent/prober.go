@@ -18,13 +18,12 @@ type proberJob struct {
 
 func (p *proberJob) run() {
 	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(5*float64(time.Second)))
+	pt := "icmp"
 
-	switch p.proberType {
-	case "http":
-		p.dispatch(ctx, "http")
-	case "icmp":
-		p.dispatch(ctx, "icmp")
+	if p.proberType == "http" {
+		pt = "http"
 	}
+	p.dispatch(ctx, pt)
 }
 
 func (p *proberJob) dispatch(ctx context.Context, pType string) {
@@ -33,12 +32,6 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 		pts     = make([]*pb.PorberResultReq, 0, len(p.targets))
 		wg      sync.WaitGroup
 	)
-
-	go func() {
-		wg.Wait()
-		// TODO 报错 想关闭的chan中写入
-		close(ptsChan)
-	}()
 
 	for _, target := range p.targets {
 		wg.Add(1)
@@ -49,8 +42,15 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 			} else {
 				ptsChan <- probeHTTP(ctx, target, p.sourceRegion, p.targetRegion)
 			}
+			time.Sleep(1 * time.Second)
 		}(target)
 	}
+
+	go func() {
+		// wg.wait() 放在 wg.add 后
+		wg.Wait()
+		close(ptsChan)
+	}()
 
 	for pt := range ptsChan {
 		pts = append(pts, pt)
@@ -58,7 +58,7 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 
 	// batch send
 	go func(pts []*pb.PorberResultReq) {
-		if err := p.r.Get().Call(
+		if err := p.r.Call(
 			"Server.ProberResultReport",
 			pts,
 			nil,

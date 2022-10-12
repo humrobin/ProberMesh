@@ -8,9 +8,10 @@ import (
 )
 
 type ProberMeshConfig struct {
-	RPCListenAddr  string          `yaml:"rpc_listen_addr"`
-	HTTPListenAddr string          `yaml:"http_listen_addr"`
-	ProberConfigs  []*ProberConfig `yaml:"prober_configs"`
+	AggregationInterval string          `yaml:"aggregation_interval"`
+	RPCListenAddr       string          `yaml:"rpc_listen_addr"`
+	HTTPListenAddr      string          `yaml:"http_listen_addr"`
+	ProberConfigs       []*ProberConfig `yaml:"prober_configs"`
 }
 
 type ProberConfig struct {
