@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"sync"
 	"time"
 )
@@ -37,6 +38,8 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 		wg.Add(1)
 		go func(target string) {
 			defer wg.Done()
+
+			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
 			if pType == "icmp" {
 				ptsChan <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
 			} else {

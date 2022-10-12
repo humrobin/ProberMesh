@@ -29,7 +29,7 @@ func BuildServerMode(configPath string) {
 		errCh := make(chan error, 1)
 		quit := make(chan struct{})
 		g.Add(func() error {
-			startRpcServer(cfg.RPCListenAddr, errCh, quit)
+			go startRpcServer(cfg.RPCListenAddr, errCh, quit)
 			return <-errCh
 		}, func(err error) {
 			cancelAll()
