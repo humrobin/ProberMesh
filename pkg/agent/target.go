@@ -19,9 +19,6 @@ type targetManager struct {
 	ready chan struct{}
 }
 
-// TODO server 报错
-// time="2022-10-13 00:24:38" level=error msg="listen accept failed  accept tcp [::]:6000: use of closed network connection" func=probermesh/pkg/server.startRpcServer file="/data/proberMesh/ProberMesh/pkg/server/rpc.go:61"
-
 var tm *targetManager
 
 func NewTargetManager(region string, pInterval, sInterval time.Duration, r *rpcCli) *targetManager {

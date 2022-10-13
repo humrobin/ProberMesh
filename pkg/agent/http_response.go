@@ -60,15 +60,20 @@ type HTTPProbe struct {
 	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
 
+func buildDefaultHTTPProbe() HTTPProbe {
+	return HTTPProbe{
+		IPProtocolFallback: true,
+		HTTPClientConfig:   config.DefaultHTTPClientConfig,
+		IPProtocol:         "ip4",
+		// 默认匹配200
+		ValidStatusCodes:   []int{200},
+	}
+}
+
 func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
 		redirects int
-		module    = HTTPProbe{
-			IPProtocolFallback: true,
-			HTTPClientConfig:   config.DefaultHTTPClientConfig,
-			IPProtocol:         "ip4",
-			ValidStatusCodes:   []int{200},
-		}
+		module    = buildDefaultHTTPProbe()
 
 		defaultHTTPPorberResultReq = &pb.PorberResultReq{
 			ProberType:    "http",
@@ -381,7 +386,6 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		logrus.Errorln("msg", "Final request was not over SSL")
 		success = false
 	}
-
 
 	if success {
 		defaultHTTPPorberResultReq.ProberSuccess = true

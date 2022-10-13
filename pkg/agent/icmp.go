@@ -57,6 +57,14 @@ func getICMPSequence() uint16 {
 	return icmpSequence
 }
 
+func buildDefaultICMPProbe() ICMPProbe {
+	return ICMPProbe{
+		IPProtocolFallback: true,
+		TTL:                defaultICMPTTL,
+		IPProtocol:         "ip4",
+	}
+}
+
 func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
 		requestType     icmp.Type
@@ -64,12 +72,8 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		icmpConn        *icmp.PacketConn
 		v4RawConn       *ipv4.RawConn
 		hopLimitFlagSet = true
+		module = buildDefaultICMPProbe()
 
-		module = ICMPProbe{
-			IPProtocolFallback: true,
-			TTL:                defaultICMPTTL,
-			IPProtocol:         "ip4",
-		}
 		defaultICMPPorberResultReq = &pb.PorberResultReq{
 			ProberType:    "icmp",
 			ICMPDurations: make(map[string]float64),
