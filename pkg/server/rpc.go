@@ -30,49 +30,42 @@ func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) er
 	return nil
 }
 
-func startRpcServer(addr string, errCh chan error, quit chan struct{}) {
+func startRpcServer(addr string) error {
 	server := rpc.NewServer()
 	err := server.Register(new(Server))
 	if err != nil {
-		logrus.Errorln("init rpc server failed ", err)
-		errCh <- err
-		return
+		return err
 	}
 
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
-		logrus.Errorln("net listen failed ", err)
-		errCh <- err
-		return
+		return err
 	}
 	var mh codec.MsgpackHandle
 	mh.MapType = reflect.TypeOf(map[string]interface{}(nil))
 
 	go func() {
-		<-quit
-		l.Close()
+		for {
+			// 从accept中拿到一个客户端的连接
+			conn, err := l.Accept()
+			if err != nil {
+				logrus.Errorln("listen accept failed ", err)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+
+			// 用bufferio做io解析提速
+			var bufConn = struct {
+				io.Closer
+				*bufio.Reader
+				*bufio.Writer
+			}{
+				conn,
+				bufio.NewReader(conn),
+				bufio.NewWriter(conn),
+			}
+			go server.ServeCodec(codec.MsgpackSpecRpc.ServerCodec(bufConn, &mh))
+		}
 	}()
-
-	for {
-		// 从accept中拿到一个客户端的连接
-		conn, err := l.Accept()
-		if err != nil {
-			logrus.Errorln("listen accept failed ", err)
-			time.Sleep(100 * time.Millisecond)
-			errCh <- err
-			return
-		}
-
-		// 用bufferio做io解析提速
-		var bufConn = struct {
-			io.Closer
-			*bufio.Reader
-			*bufio.Writer
-		}{
-			conn,
-			bufio.NewReader(conn),
-			bufio.NewWriter(conn),
-		}
-		go server.ServeCodec(codec.MsgpackSpecRpc.ServerCodec(bufConn, &mh))
-	}
+	return nil
 }

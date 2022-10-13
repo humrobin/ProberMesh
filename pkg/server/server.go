@@ -29,21 +29,13 @@ func BuildServerMode(configPath string) {
 		return
 	}
 
-	var g run.Group
-	{
-		// rpc server
-		errCh := make(chan error, 1)
-		quit := make(chan struct{})
-		g.Add(func() error {
-			go startRpcServer(cfg.RPCListenAddr, errCh, quit)
-			return <-errCh
-		}, func(err error) {
-			cancelAll()
-			close(quit)
-			logrus.Warnln("rpc server over")
-		})
+	// rpc server
+	if err := startRpcServer(cfg.RPCListenAddr); err != nil {
+		logrus.Fatalln("start rpc server failed ", err)
+		return
 	}
 
+	var g run.Group
 	{
 		// 初始化targetsPool
 		g.Add(func() error {
