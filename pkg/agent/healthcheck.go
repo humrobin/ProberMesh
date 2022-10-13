@@ -22,7 +22,7 @@ type healthCheck struct {
 func newHealthCheck(ctx context.Context, r *rpcCli) *healthCheck {
 	return &healthCheck{
 		r:          r,
-		selfRegion: getSelfRegion(),
+		selfRegion: tm.selfRegion,
 		selfAddr:   getLocalIP(),
 		cancel:     ctx,
 	}
