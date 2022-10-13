@@ -14,6 +14,13 @@ var (
 		Help: "icmp prober duration by phase",
 	}, []string{"phase", "source_region", "target_region"})
 
+	icmpProberDurationHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "prober_icmp_duration_seconds_total",
+		Help: "icmp prober duration histogram by phase",
+		// 0.002s ~ 8.192s
+		Buckets: prometheus.ExponentialBuckets(0.002, 2, 12),
+	}, []string{"source_region", "target_region"})
+
 	// http
 	httpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "prober_http_failed",
@@ -35,6 +42,7 @@ var (
 func init() {
 	prometheus.MustRegister(icmpProberFailedGaugeVec)
 	prometheus.MustRegister(icmpProberDurationGaugeVec)
+	prometheus.MustRegister(icmpProberDurationHistogramVec)
 	prometheus.MustRegister(httpProberFailedGaugeVec)
 	prometheus.MustRegister(httpProberDurationGaugeVec)
 	prometheus.MustRegister(agentHealthCheckGaugeVec)

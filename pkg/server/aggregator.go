@@ -154,6 +154,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 			agg.targetRegion,
 		).Set(float64(agg.failedCnt))
 
+		var icmpTotal float64
 		for stage, total := range agg.phase {
 			// 每个 sR->tR 的每个stage的平均
 			icmpProberDurationGaugeVec.WithLabelValues(
@@ -161,7 +162,15 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 				agg.sourceRegion,
 				agg.targetRegion,
 			).Set(total / float64(agg.batchCnt))
+
+			icmpTotal += total
 		}
+
+		// 为 r->r 打点histogram
+		icmpProberDurationHistogramVec.WithLabelValues(
+			agg.sourceRegion,
+			agg.targetRegion,
+		).Observe(icmpTotal)
 	}
 }
 
