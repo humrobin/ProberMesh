@@ -14,14 +14,13 @@ import (
 
 type Server struct{}
 
-func (s *Server) Report(req pb.PingReq, resp *string) error {
-	msg := "success"
-	resp = &msg
+func (s *Server) Report(req pb.ReportReq, resp *string) error {
+	hd.report(req.Region, req.IP)
 	return nil
 }
 
 func (s *Server) GetTargetPool(req pb.TargetPoolReq, resp *pb.TargetPoolResp) error {
-	tcs := GetTP().GetPool(req.SourceRegion)
+	tcs := tp.GetPool(req.SourceRegion)
 	resp.Targets = tcs
 	return nil
 }

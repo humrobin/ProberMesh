@@ -115,11 +115,12 @@ func initLog() {
 
 func initArgs() {
 	flag.StringVar(&configPath, "config.file", "prober_mesh.yaml", "指定config path")
+	flag.StringVar(&mode, "mode", "server", "服务模式: agent/server")
 
-	flag.StringVar(&mode, "mode", "server", "服务模式, agent/server")
-	flag.StringVar(&agentOption.Addr, "rpc.server.addr", "localhost:6000", "server rpc地址")
+	flag.StringVar(&agentOption.Addr, "rpc.server.addr", "localhost:6000", "server的RPC地址")
 	flag.StringVar(&agentOption.PInterval, "prober.interval", "15s", "探测间隔")
-	flag.StringVar(&agentOption.SInterval, "sync.interval", "5m", "同步 Server 间隔")
+	flag.StringVar(&agentOption.SInterval, "sync.interval", "5m", "同步server间隔")
+	flag.StringVar(&agentOption.Region, "prober.region", "", "指定agent所属region;默认自动获取")
 	flag.BoolVar(&v, "v", false, "版本信息")
 	flag.BoolVar(&h, "h", false, "帮助信息")
 	flag.Parse()

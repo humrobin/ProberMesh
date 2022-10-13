@@ -13,23 +13,32 @@ type targetManager struct {
 	targets         map[string][]*config.ProberConfig
 	refreshInterval time.Duration
 	syncInterval    time.Duration
-	currents        map[string]*proberJob
+	currents        map[string]struct{}
 	selfRegion      string
 
 	ready chan struct{}
 }
 
+// TODO server 报错
+// time="2022-10-13 00:24:38" level=error msg="listen accept failed  accept tcp [::]:6000: use of closed network connection" func=probermesh/pkg/server.startRpcServer file="/data/proberMesh/ProberMesh/pkg/server/rpc.go:61"
+
 var tm *targetManager
 
-func NewTargetManager(pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
+func NewTargetManager(region string, pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
 		refreshInterval: pInterval,
 		syncInterval:    sInterval,
 		r:               r,
 		ready:           make(chan struct{}),
-		currents:        make(map[string]*proberJob),
-		selfRegion:      getSelfRegion(),
+	}
+
+	// 如果指定了region,使用指定
+	// 未指定region,自动获取
+	if len(region) > 0 {
+		tm.selfRegion = region
+	} else {
+		tm.selfRegion = getSelfRegion()
 	}
 	return tm
 }
@@ -63,7 +72,6 @@ func (t *targetManager) prober() {
 				r:            t.r,
 			}
 			pj.run()
-			t.currents["cn-shanghai"+region+tt.ProberType] = pj
 		}
 	}
 }

@@ -21,7 +21,13 @@ func BuildServerMode(configPath string) {
 	cfg := config.Get()
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
-	ctxAll = ctxAll
+
+	// 解析agg interval
+	aggD, err := util.ParseDuration(cfg.AggregationInterval)
+	if err != nil {
+		logrus.Errorln("agg interval parse failed ", err)
+		return
+	}
 
 	var g run.Group
 	{
@@ -41,7 +47,7 @@ func BuildServerMode(configPath string) {
 	{
 		// 初始化targetsPool
 		g.Add(func() error {
-			initTargetsPool(ctxAll, cfg).start()
+			newTargetsPool(ctxAll, cfg).start()
 			return nil
 		}, func(err error) {
 			cancelAll()
@@ -49,14 +55,19 @@ func BuildServerMode(configPath string) {
 	}
 
 	{
+		// health check 打点
+		g.Add(func() error {
+			newHealthDot(ctxAll, aggD).dot()
+			return nil
+		}, func(e error) {
+			cancelAll()
+		})
+	}
+
+	{
 		// aggregation
 		g.Add(func() error {
-			aggD, err := util.ParseDuration(cfg.AggregationInterval)
-			if err != nil {
-				logrus.Errorln("agg interval parse failed ", err)
-				return err
-			}
-			NewAggregator(ctxAll, aggD).startAggregation()
+			newAggregator(ctxAll, aggD).startAggregation()
 			return nil
 		}, func(err error) {
 			cancelAll()

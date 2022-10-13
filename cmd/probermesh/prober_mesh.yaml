@@ -8,12 +8,12 @@ prober_configs:
     targets:
       - http://www.baidu.com
       - http://www.taobao.com
-      - http://test.com
-  - prober_type: http
-    region: cn-chengdu
-    targets:
-      - www.baidu.com
-      - www.taobao.com
+
+#  - prober_type: http
+#    region: cn-chengdu
+#    targets:
+#      - www.baidu.com
+#      - www.taobao.com
 #  - prober_type: icmp
 #    region: cn-hangzhou
 #    targets:

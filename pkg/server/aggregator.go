@@ -31,7 +31,7 @@ type aggProberResult struct {
 
 var aggregator *Aggregator
 
-func NewAggregator(ctx context.Context, interval time.Duration) *Aggregator {
+func newAggregator(ctx context.Context, interval time.Duration) *Aggregator {
 	aggregator = &Aggregator{
 		queue:       make([][]*pb.PorberResultReq, 0),
 		aggInterval: interval,

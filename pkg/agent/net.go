@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	defaultRegion    = "cn-shanghai"
+	defaultRegionCmd = "curl -s http://100.100.100.200/latest/meta-data/region-id"
+)
+
 func getLocalIP() string {
 	var (
 		addrs   []net.Addr
@@ -34,14 +39,12 @@ func getLocalIP() string {
 }
 
 func getSelfRegion() string {
-	var defaultRegion = "cn-shanghai"
-
-	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(1)*time.Second)
+	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(2)*time.Second)
 	cmd := exec.CommandContext(
 		ctx,
 		"bash",
 		"-c",
-		"curl -s http://100.100.100.200/latest/meta-data/region-id",
+		defaultRegionCmd,
 	)
 
 	bs, err := cmd.CombinedOutput()

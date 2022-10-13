@@ -2,7 +2,7 @@ package pb
 
 import "probermesh/config"
 
-type PingReq struct {
+type ReportReq struct {
 	IP     string `json:"ip"`
 	Region string `json:"region"`
 }

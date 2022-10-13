@@ -15,7 +15,13 @@ type proberJob struct {
 	sourceRegion string
 	targetRegion string
 	r            *rpcCli
+
+	m sync.Mutex
 }
+
+const (
+	defaultKeySeparator = "_"
+)
 
 func (p *proberJob) run() {
 	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(5*float64(time.Second)))
@@ -25,6 +31,27 @@ func (p *proberJob) run() {
 		pt = "http"
 	}
 	p.dispatch(ctx, pt)
+}
+
+func (p *proberJob) jobExist(
+	proberType string,
+	sourceRegion string,
+	targetRegion string,
+	proberTarget string,
+) bool {
+	key := proberType + defaultKeySeparator + sourceRegion + defaultKeySeparator + targetRegion + defaultKeySeparator + proberTarget
+
+	p.m.Lock()
+	defer p.m.Unlock()
+	if tm.currents == nil {
+		tm.currents = make(map[string]struct{})
+	}
+
+	if _, ok := tm.currents[key]; ok {
+		return true
+	}
+	tm.currents[key] = struct{}{}
+	return false
 }
 
 func (p *proberJob) dispatch(ctx context.Context, pType string) {
@@ -38,6 +65,17 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 		wg.Add(1)
 		go func(target string) {
 			defer wg.Done()
+
+			// 防止重复地址探测
+			if p.jobExist(
+				pType,
+				p.sourceRegion,
+				p.targetRegion,
+				target,
+			) {
+				logrus.Warnln("target deduplication ", pType, p.sourceRegion, p.targetRegion, target)
+				return
+			}
 
 			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
 			if pType == "icmp" {
@@ -53,6 +91,7 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 		// wg.wait() 放在 wg.add 后
 		wg.Wait()
 		close(ptsChan)
+		tm.currents = nil
 	}()
 
 	for pt := range ptsChan {

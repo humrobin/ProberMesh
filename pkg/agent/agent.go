@@ -9,7 +9,7 @@ import (
 )
 
 type ProberMeshAgentOption struct {
-	Addr, PInterval, SInterval string
+	Addr, PInterval, SInterval, Region string
 }
 
 func BuildAgentMode(ao *ProberMeshAgentOption) {
@@ -32,20 +32,29 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	ctxAll, cancelAll := context.WithCancel(context.Background())
 
 	cli := initRpcCli(ctxAll, ao.Addr)
-
-	if err != nil {
-		logrus.Errorln("agent get cli failed ", err)
-		return
-	}
-
 	var g run.Group
 	{
 		// 定时拉取mesh poll
-		manager := NewTargetManager(pDuration, sDuration, cli)
+		manager := NewTargetManager(
+			ao.Region,
+			pDuration,
+			sDuration,
+			cli,
+		)
 		g.Add(func() error {
 			manager.start(ctxAll)
 			return nil
 		}, func(err error) {
+			cancelAll()
+		})
+	}
+
+	{
+		// healthCheck
+		g.Add(func() error {
+			newHealthCheck(ctxAll, cli).report()
+			return nil
+		}, func(e error) {
 			cancelAll()
 		})
 	}

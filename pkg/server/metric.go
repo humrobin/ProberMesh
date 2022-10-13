@@ -24,6 +24,12 @@ var (
 		Name: "prober_http_duration_seconds",
 		Help: "http prober duration by phase",
 	}, []string{"phase", "source_region", "target_addr"})
+
+	// healthCheck
+	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "prober_agent_is_alive",
+		Help: "proberMesh agent is alive",
+	}, []string{"region", "ip"})
 )
 
 func init() {
@@ -31,4 +37,5 @@ func init() {
 	prometheus.MustRegister(icmpProberDurationGaugeVec)
 	prometheus.MustRegister(httpProberFailedGaugeVec)
 	prometheus.MustRegister(httpProberDurationGaugeVec)
+	prometheus.MustRegister(agentHealthCheckGaugeVec)
 }

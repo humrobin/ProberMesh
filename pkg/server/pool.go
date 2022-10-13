@@ -14,11 +14,7 @@ type targetsPool struct {
 
 var tp *targetsPool
 
-func GetTP() *targetsPool {
-	return tp
-}
-
-func initTargetsPool(ctx context.Context, cfg *config.ProberMeshConfig) *targetsPool {
+func newTargetsPool(ctx context.Context, cfg *config.ProberMeshConfig) *targetsPool {
 	tp = &targetsPool{
 		pool: make(map[string][]*config.ProberConfig),
 		cfg:  cfg,
