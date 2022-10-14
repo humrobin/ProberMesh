@@ -1,4 +1,4 @@
-aggregation_interval: 10s
+aggregation_interval: 15s
 rpc_listen_addr: 0.0.0.0:6000
 http_listen_addr: 0.0.0.0:6001
 
