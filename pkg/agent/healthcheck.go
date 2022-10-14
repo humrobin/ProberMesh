@@ -32,24 +32,28 @@ func (h *healthCheck) report() {
 	ticker := time.NewTicker(healthCheckInterval)
 	defer ticker.Stop()
 
+	do := func() {
+		var msg string
+		err := h.r.Call(
+			"Server.Report",
+			pb.ReportReq{
+				IP:     h.selfAddr,
+				Region: h.selfRegion,
+			},
+			&msg,
+		)
+		if err != nil {
+			logrus.Errorln("rpc report failed ", err)
+		}
+	}
+
+	do()
 	for {
 		select {
 		case <-h.cancel.Done():
 			return
 		case <-ticker.C:
-			var msg string
-			err := h.r.Call(
-				"Server.Report",
-				pb.ReportReq{
-					IP:     h.selfAddr,
-					Region: h.selfRegion,
-				},
-				&msg,
-			)
-			if err != nil {
-				logrus.Errorln("rpc report failed ", err)
-				return
-			}
+			do()
 		}
 	}
 }

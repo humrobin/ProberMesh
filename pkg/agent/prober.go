@@ -24,7 +24,7 @@ const (
 )
 
 func (p *proberJob) run() {
-	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(5*float64(time.Second)))
+	ctx, _ := context.WithTimeout(context.TODO(), tm.refreshInterval*time.Second)
 	pt := "icmp"
 
 	if p.proberType == "http" {
