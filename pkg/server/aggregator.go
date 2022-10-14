@@ -131,10 +131,12 @@ func (a *Aggregator) agg() {
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for _, agg := range http {
-		httpProberFailedGaugeVec.WithLabelValues(
-			agg.sourceRegion,
-			agg.targetAddr,
-		).Set(float64(agg.failedCnt))
+		if agg.failedCnt > 0 {
+			httpProberFailedGaugeVec.WithLabelValues(
+				agg.sourceRegion,
+				agg.targetAddr,
+			).Set(float64(agg.failedCnt))
+		}
 
 		for stage, total := range agg.phase {
 			// 每个 sR->tR 的每个stage的平均
@@ -149,28 +151,40 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 	for _, agg := range icmp {
-		icmpProberFailedGaugeVec.WithLabelValues(
-			agg.sourceRegion,
-			agg.targetRegion,
-		).Set(float64(agg.failedCnt))
+		if agg.failedCnt > 0 {
+			icmpProberFailedGaugeVec.WithLabelValues(
+				agg.sourceRegion,
+				agg.targetRegion,
+			).Set(float64(agg.failedCnt))
+		}
 
-		var icmpTotal float64
+		var icmpDurationsTotal float64
 		for stage, total := range agg.phase {
+			stageAgg := total / float64(agg.batchCnt)
+
+			// 单独打点丢包率指标
+			if stage == "loss" {
+				icmpProberPacketLossRateGaugeVec.WithLabelValues(
+					agg.sourceRegion,
+					agg.targetRegion,
+				).Set(stageAgg)
+				continue
+			}
+
 			// 每个 sR->tR 的每个stage的平均
 			icmpProberDurationGaugeVec.WithLabelValues(
 				stage,
 				agg.sourceRegion,
 				agg.targetRegion,
-			).Set(total / float64(agg.batchCnt))
-
-			icmpTotal += total
+			).Set(stageAgg)
+			icmpDurationsTotal += total
 		}
 
 		// 为 r->r 打点histogram
 		icmpProberDurationHistogramVec.WithLabelValues(
 			agg.sourceRegion,
 			agg.targetRegion,
-		).Observe(icmpTotal)
+		).Observe(icmpDurationsTotal)
 	}
 }
 
