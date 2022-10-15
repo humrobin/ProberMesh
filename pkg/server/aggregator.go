@@ -112,16 +112,22 @@ func (a *Aggregator) agg() {
 				}
 			}
 
+			// 只有 ProberSuccess 成功的任务才 batchCnt++
+			// 保证算agg时，分母一定为成功的job数
+			// 防止: 成功4台,失败1台；算agg: 理想 total/4, 结果 total/5, 反而会拉低实际值
 			container := containers[key]
-			containers[key].batchCnt++
-			if !pr.ProberSuccess {
-				container.failedCnt++
+			if pr.ProberSuccess {
+				container.batchCnt++
+
+				// 仅累加成功任务的phase
+				for stage, val := range phase {
+					container.phase[stage] += val
+				}
+				continue
 			}
 
-			// 累加phase
-			for stage, val := range phase {
-				container.phase[stage] += val
-			}
+			// 失败任务 failedCnt自增
+			container.failedCnt++
 		}
 	}
 
@@ -151,6 +157,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 	for _, agg := range icmp {
+		// 当前 r to r 存在探测失败任务
 		if agg.failedCnt > 0 {
 			icmpProberFailedGaugeVec.WithLabelValues(
 				agg.sourceRegion,
