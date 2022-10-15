@@ -5,25 +5,35 @@ import "github.com/prometheus/client_golang/prometheus"
 var (
 	namespace = "prober"
 
-	// icmp
+	// icmp 探测失败数量
 	icmpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_failed",
 		Help:      "icmp prober failed times",
 	}, []string{"source_region", "target_region"})
 
+	// icmp 分阶段耗时
 	icmpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_duration_seconds",
 		Help:      "icmp prober duration by phase",
 	}, []string{"phase", "source_region", "target_region"})
 
+	// icmp 丢包率
 	icmpProberPacketLossRateGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_packet_loss_rate",
 		Help:      "icmp prober packet loss rate",
 	}, []string{"source_region", "target_region"})
 
+	// icmp 时延标准差 stddev
+	icmpProberJitterStdDevGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "icmp_jitter_stddev_seconds",
+		Help:      "icmp prober network jitter std dev seconds",
+	}, []string{"source_region", "target_region"})
+
+	// icmp 总耗时分布
 	icmpProberDurationHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: namespace,
 		Name:      "icmp_duration_seconds_total",
@@ -32,20 +42,21 @@ var (
 		Buckets: prometheus.ExponentialBuckets(0.00005, 2, 19),
 	}, []string{"source_region", "target_region"})
 
-	// http
+	// http 探测失败数量
 	httpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "http_failed",
 		Help:      "http prober failed times",
 	}, []string{"source_region", "target_addr"})
 
+	// http 分阶段耗时
 	httpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "http_duration_seconds",
 		Help:      "http prober duration by phase",
 	}, []string{"phase", "source_region", "target_addr"})
 
-	// healthCheck
+	// agent 节点健康检查
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "agent_is_alive",
@@ -58,6 +69,7 @@ func init() {
 	prometheus.MustRegister(icmpProberDurationGaugeVec)
 	prometheus.MustRegister(icmpProberDurationHistogramVec)
 	prometheus.MustRegister(icmpProberPacketLossRateGaugeVec)
+	prometheus.MustRegister(icmpProberJitterStdDevGaugeVec)
 	prometheus.MustRegister(httpProberFailedGaugeVec)
 	prometheus.MustRegister(httpProberDurationGaugeVec)
 	prometheus.MustRegister(agentHealthCheckGaugeVec)

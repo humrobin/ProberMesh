@@ -44,7 +44,7 @@ var (
 	defaultICMPTTL           = 64
 	defaultICMPSize          = 64
 	defaultICMPCount         = 50
-	defaultICMPFloodInterval = time.Duration(20) * time.Millisecond
+	defaultICMPFloodInterval = time.Duration(15) * time.Millisecond
 )
 
 func getICMPSequence() uint16 {
@@ -407,6 +407,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			defaultICMPPorberResultReq.ProberSuccess = true
 			defaultICMPPorberResultReq.ICMPDurations["loss"] = stats.PacketLoss
 			defaultICMPPorberResultReq.ICMPDurations["rtt"] = stats.AvgRtt.Seconds()
+			defaultICMPPorberResultReq.ICMPDurations["stddev"] = stats.StdDevRtt.Seconds()
 		}
 	}
 

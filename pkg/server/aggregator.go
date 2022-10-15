@@ -162,22 +162,28 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 		for stage, total := range agg.phase {
 			stageAgg := total / float64(agg.batchCnt)
 
-			// 单独打点丢包率指标
-			if stage == "loss" {
+			switch stage {
+			case "loss":
+				// 单独打点丢包率指标
 				icmpProberPacketLossRateGaugeVec.WithLabelValues(
 					agg.sourceRegion,
 					agg.targetRegion,
 				).Set(stageAgg)
-				continue
+			case "stddev":
+				// 单独打点 stddev 抖动指标
+				icmpProberJitterStdDevGaugeVec.WithLabelValues(
+					agg.sourceRegion,
+					agg.targetRegion,
+				).Set(stageAgg)
+			default:
+				// 每个 sR->tR 的每个stage的平均
+				icmpProberDurationGaugeVec.WithLabelValues(
+					stage,
+					agg.sourceRegion,
+					agg.targetRegion,
+				).Set(stageAgg)
+				icmpDurationsTotal += total
 			}
-
-			// 每个 sR->tR 的每个stage的平均
-			icmpProberDurationGaugeVec.WithLabelValues(
-				stage,
-				agg.sourceRegion,
-				agg.targetRegion,
-			).Set(stageAgg)
-			icmpDurationsTotal += total
 		}
 
 		// 为 r->r 打点histogram
