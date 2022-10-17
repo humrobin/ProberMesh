@@ -8,20 +8,24 @@ import (
 )
 
 type healthDot struct {
-	expires   time.Duration
-	agentPool map[string]time.Time
+	expires      time.Duration
+	agentPool    map[string]time.Time
+	discoverPool map[string][]string
 
 	cancel context.Context
+	ready  chan struct{}
 	m      sync.Mutex
 }
 
 var hd *healthDot
 
-func newHealthDot(ctx context.Context, expires time.Duration) *healthDot {
+func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{}) *healthDot {
 	hd = &healthDot{
-		expires:   expires,
-		agentPool: make(map[string]time.Time),
-		cancel:    ctx,
+		expires:      expires,
+		agentPool:    make(map[string]time.Time),
+		discoverPool: make(map[string][]string),
+		cancel:       ctx,
+		ready:        ready,
 	}
 	return hd
 }
@@ -30,6 +34,18 @@ func (h *healthDot) report(region, ip string) {
 	h.m.Lock()
 	defer h.m.Unlock()
 	h.agentPool[region+defaultKeySeparator+ip] = time.Now()
+
+	// 将上报的agent region和ip存入
+	if ips, ok := h.discoverPool[region]; ok {
+		ips = append(ips, ip)
+	} else {
+		h.discoverPool[region] = []string{ip}
+	}
+
+	if h.ready != nil {
+		close(h.ready)
+		h.ready = nil
+	}
 }
 
 func (h *healthDot) dot() {
@@ -57,4 +73,8 @@ func (h *healthDot) dot() {
 			}
 		}
 	}
+}
+
+func getDiscoverPool() map[string][]string {
+	return hd.discoverPool
 }

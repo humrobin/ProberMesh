@@ -17,12 +17,12 @@ import (
 const projectName = "ProberMesh"
 
 var (
-	configPath string
-	mode       string
+	serverOption = new(server.ProberMeshServerOption)
+	agentOption  = new(agent.ProberMeshAgentOption)
 
-	agentOption = new(agent.ProberMeshAgentOption)
-	h           bool
-	v           bool
+	mode string
+	h    bool
+	v    bool
 )
 
 func init() {
@@ -114,13 +114,21 @@ func initLog() {
 }
 
 func initArgs() {
-	flag.StringVar(&configPath, "config.file", "prober_mesh.yaml", "指定config path")
-	flag.StringVar(&mode, "mode", "server", "服务模式: agent/server")
+	flag.StringVar(&mode, "mode", "server", "服务模式(agent/server)")
 
-	flag.StringVar(&agentOption.Addr, "rpc.server.addr", "localhost:6000", "server的RPC地址")
-	flag.StringVar(&agentOption.PInterval, "prober.interval", "15s", "探测间隔")
-	flag.StringVar(&agentOption.SInterval, "sync.interval", "5m", "同步server间隔")
-	flag.StringVar(&agentOption.Region, "prober.region", "", "指定agent所属region;默认自动获取")
+	flag.StringVar(&serverOption.TargetsConfigPath, "server.probe.file", "", "server端探测列表文件路径")
+	flag.StringVar(&serverOption.ICMPDiscoveryType, "server.icmp.discovery", "static", `server端ICMP探测目标获取模式(static/dynamic);
+static:  各region下icmp探测地址按照配置文件为准;
+dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，且会覆盖掉配置中同region下原icmp列表;
+`)
+	flag.StringVar(&serverOption.RPCListenAddr, "server.rpc.listen.addr", "localhost:6000", "serverRPC监听地址")
+	flag.StringVar(&serverOption.HTTPListenAddr, "server.http.listen.addr", "localhost:6001", "serverHTTP监听地址")
+	flag.StringVar(&serverOption.AggregationInterval, "server.aggregation.interval", "15s", "server聚合周期")
+
+	flag.StringVar(&agentOption.Addr, "server.rpc.addr", "localhost:6000", "server端RPC地址")
+	flag.StringVar(&agentOption.PInterval, "agent.probe.interval", "15s", "agent端探测周期")
+	flag.StringVar(&agentOption.SInterval, "agent.sync.interval", "1m", "agent端同步targets周期")
+	flag.StringVar(&agentOption.Region, "agent.region", "", "agent端所属域;默认为region(自动获取regionID)")
 	flag.BoolVar(&v, "v", false, "版本信息")
 	flag.BoolVar(&h, "h", false, "帮助信息")
 	flag.Parse()
@@ -139,11 +147,11 @@ func initArgs() {
 func main() {
 	switch mode {
 	case "agent":
-		logrus.Warnln("build agent mode")
+		logrus.Warnln("build for agent mode")
 		agent.BuildAgentMode(agentOption)
 	case "server":
-		logrus.Warnln("build server mode")
-		server.BuildServerMode(configPath)
+		logrus.Warnln("build for server mode")
+		server.BuildServerMode(serverOption)
 	default:
 		logrus.Fatal("mode must be set and in agent/server")
 	}

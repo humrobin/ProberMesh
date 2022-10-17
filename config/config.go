@@ -8,9 +8,6 @@ import (
 )
 
 type ProberMeshConfig struct {
-	AggregationInterval string          `yaml:"aggregation_interval"`
-	RPCListenAddr       string          `yaml:"rpc_listen_addr"`
-	HTTPListenAddr      string          `yaml:"http_listen_addr"`
 	ProberConfigs       []*ProberConfig `yaml:"prober_configs"`
 }
 
@@ -38,6 +35,10 @@ func InitConfig(path string) error {
 }
 
 func Get() *ProberMeshConfig {
+	if cfg == nil {
+		// 防止不指定配置参数时遍历pcs报错
+		return &ProberMeshConfig{ProberConfigs:nil}
+	}
 	return cfg
 }
 

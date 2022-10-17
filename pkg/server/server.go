@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -13,33 +14,54 @@ import (
 	"syscall"
 )
 
-func BuildServerMode(configPath string) {
-	if err := config.InitConfig(configPath); err != nil {
-		logrus.Fatal("server parse config failed ", err)
-	}
+type ProberMeshServerOption struct {
+	TargetsConfigPath, ICMPDiscoveryType, HTTPListenAddr, RPCListenAddr, AggregationInterval string
+}
 
-	cfg := config.Get()
+func BuildServerMode(so *ProberMeshServerOption) {
+	verify := func() error {
+		// static 模式下配置文件必须指定，否则icmp没数据，http也没数据；无意义
+		if discoveryType(so.ICMPDiscoveryType) == StaticDiscovery {
+			if len(so.TargetsConfigPath) == 0 {
+				return errors.New("flag -server.probe.file must be set when -server.icmp.discovery flag is 'static'")
+			}
+		} else {
+			// 动态模式下配置参数可以不指定，有icmp保底
+			if len(so.TargetsConfigPath) > 0 {
+				if err := config.InitConfig(so.TargetsConfigPath); err != nil {
+					logrus.Fatal("server parse config failed ", err)
+				}
+			}
+		}
+		return nil
+	}
+	if err := verify(); err != nil {
+		logrus.Fatalln("server config verify failed ", err)
+	}
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
 
 	// 解析agg interval
-	aggD, err := util.ParseDuration(cfg.AggregationInterval)
+	aggD, err := util.ParseDuration(so.AggregationInterval)
 	if err != nil {
 		logrus.Errorln("agg interval parse failed ", err)
 		return
 	}
 
 	// rpc server
-	if err := startRpcServer(cfg.RPCListenAddr); err != nil {
+	if err := startRpcServer(so.RPCListenAddr); err != nil {
 		logrus.Fatalln("start rpc server failed ", err)
 		return
 	}
 
 	var g run.Group
+
+	// 首次上报后 再updatePool,否则update不到数据
+	ready := make(chan struct{})
 	{
 		// 初始化targetsPool
 		g.Add(func() error {
-			newTargetsPool(ctxAll, cfg).start()
+			newTargetsPool(ctxAll, config.Get(), ready, so.ICMPDiscoveryType).start()
 			return nil
 		}, func(err error) {
 			cancelAll()
@@ -49,7 +71,7 @@ func BuildServerMode(configPath string) {
 	{
 		// health check 打点
 		g.Add(func() error {
-			newHealthDot(ctxAll, aggD).dot()
+			newHealthDot(ctxAll, aggD, ready).dot()
 			return nil
 		}, func(e error) {
 			cancelAll()
@@ -71,7 +93,7 @@ func BuildServerMode(configPath string) {
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
 		svc := http.Server{
-			Addr:    cfg.HTTPListenAddr,
+			Addr:    so.HTTPListenAddr,
 			Handler: mux,
 		}
 

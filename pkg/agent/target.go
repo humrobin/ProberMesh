@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"probermesh/config"
 	"probermesh/pkg/pb"
@@ -108,5 +109,10 @@ func (t *targetManager) getTargets() {
 		return
 	}
 
+	var msg string
+	for region, pcs := range resp.Targets {
+		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", region, len(pcs))
+	}
+	logrus.Warnln("agent get current target list msg: ", msg)
 	t.targets = resp.Targets
 }
