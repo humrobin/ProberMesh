@@ -75,14 +75,32 @@ func (t *targetsPool) updatePool() {
 
 	do := func() {
 		var updateKey = "icmp"
-		for region, ips := range getDiscoverPool() {
+		for region, ipm := range getDiscoverPool() {
+			if len(ipm) == 0 {
+				// 当前region agent下线,则删除当前region下的icmp，防止后续继续同步
+				if pm, ok := t.pool[region]; ok {
+					if len(pm) > 0 {
+						delete(t.pool[region], updateKey)
+					} else {
+						// 如果当前region下agent全部下线，则在pool中删除掉当前region信息
+						delete(t.pool, region)
+					}
+				}
+				continue
+			}
+
+			var ips []string
+			for k := range ipm {
+				ips = append(ips, k)
+			}
+
 			updatePC := &config.ProberConfig{
 				ProberType: updateKey,
 				Region:     region,
 				Targets:    ips,
 			}
 
-			// 如果使用自动发现方式，则会覆盖掉配置中指定的同regon下的icmp targets节点
+			// 如果使用自动发现方式，则会覆盖掉配置中指定的同region下的icmp targets节点
 			// 全部使用agent上报的ip进行探测
 			if pm, ok := t.pool[region]; ok {
 				pm[updateKey] = updatePC
