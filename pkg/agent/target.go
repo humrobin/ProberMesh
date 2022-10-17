@@ -111,7 +111,11 @@ func (t *targetManager) getTargets() {
 
 	var msg string
 	for region, pcs := range resp.Targets {
-		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", region, len(pcs))
+		var batch int
+		for _, pc := range pcs {
+			batch += len(pc.Targets)
+		}
+		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", region, batch)
 	}
 	logrus.Warnln("agent get current target list msg: ", msg)
 	t.targets = resp.Targets
