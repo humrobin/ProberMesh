@@ -16,18 +16,25 @@ type targetManager struct {
 	currents        map[string]struct{}
 	selfRegion      string
 
-	ready chan struct{}
+	ready, beforeReady chan struct{}
 }
 
 var tm *targetManager
 
-func NewTargetManager(region string, pInterval, sInterval time.Duration, r *rpcCli) *targetManager {
+func NewTargetManager(
+	region string,
+	pInterval,
+	sInterval time.Duration,
+	r *rpcCli,
+	br chan struct{},
+) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
 		refreshInterval: pInterval,
 		syncInterval:    sInterval,
 		r:               r,
 		ready:           make(chan struct{}),
+		beforeReady:     br,
 	}
 
 	// 如果指定了region,使用指定
@@ -41,6 +48,8 @@ func NewTargetManager(region string, pInterval, sInterval time.Duration, r *rpcC
 }
 
 func (t *targetManager) start(ctx context.Context) {
+	<-t.beforeReady
+
 	// 定时获取targets
 	go t.sync(ctx)
 

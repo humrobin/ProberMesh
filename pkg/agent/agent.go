@@ -33,6 +33,9 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 
 	cli := initRpcCli(ctxAll, ao.Addr)
 	var g run.Group
+
+	// 上报后再manager.start()
+	beforeReady := make(chan struct{})
 	{
 		// 定时拉取mesh poll
 		manager := NewTargetManager(
@@ -40,6 +43,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 			pDuration,
 			sDuration,
 			cli,
+			beforeReady,
 		)
 		g.Add(func() error {
 			manager.start(ctxAll)
@@ -52,7 +56,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	{
 		// healthCheck
 		g.Add(func() error {
-			newHealthCheck(ctxAll, cli).report()
+			newHealthCheck(ctxAll, cli, beforeReady).report()
 			return nil
 		}, func(e error) {
 			cancelAll()

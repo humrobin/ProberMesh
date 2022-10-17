@@ -15,16 +15,18 @@ type healthCheck struct {
 	r          *rpcCli
 	selfRegion string
 	selfAddr   string
+	ready      chan struct{}
 
 	cancel context.Context
 }
 
-func newHealthCheck(ctx context.Context, r *rpcCli) *healthCheck {
+func newHealthCheck(ctx context.Context, r *rpcCli, ready chan struct{}) *healthCheck {
 	return &healthCheck{
 		r:          r,
 		selfRegion: tm.selfRegion,
 		selfAddr:   getLocalIP(),
 		cancel:     ctx,
+		ready:      ready,
 	}
 }
 
@@ -48,6 +50,7 @@ func (h *healthCheck) report() {
 	}
 
 	do()
+	close(h.ready)
 	for {
 		select {
 		case <-h.cancel.Done():
