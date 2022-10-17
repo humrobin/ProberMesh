@@ -89,7 +89,7 @@ prober_configs:
 ./proberMesh -server.icmp.discovery dynamic -server.probe.file ./prober_mesh.yaml
 
 # agent 端使用
-./proberMesh -mode agent -agent.region ali-cn-shanghai
+./proberMesh -mode agent -agent.region ali-cn-shanghai -server.rpc.addr localhost:6000
 
 
 其余参数可根据需要自定义调整

@@ -20,19 +20,19 @@ type ProberMeshServerOption struct {
 
 func BuildServerMode(so *ProberMeshServerOption) {
 	verify := func() error {
-		// static 模式下配置文件必须指定，否则icmp没数据，http也没数据；无意义
-		if discoveryType(so.ICMPDiscoveryType) == StaticDiscovery {
-			if len(so.TargetsConfigPath) == 0 {
-				return errors.New("flag -server.probe.file must be set when -server.icmp.discovery flag is 'static'")
-			}
-		} else {
-			// 动态模式下配置参数可以不指定，有icmp保底
-			if len(so.TargetsConfigPath) > 0 {
-				if err := config.InitConfig(so.TargetsConfigPath); err != nil {
-					logrus.Fatal("server parse config failed ", err)
-				}
+		if discoveryType(so.ICMPDiscoveryType) == StaticDiscovery && len(so.TargetsConfigPath) == 0 {
+			// static 模式下配置文件必须指定，否则icmp没数据，http也没数据；无意义
+			return errors.New("flag -server.probe.file must be set when -server.icmp.discovery flag is 'static'")
+		}
+
+		// 动态模式下配置参数可以不指定，有icmp保底
+		if len(so.TargetsConfigPath) > 0 {
+			if err := config.InitConfig(so.TargetsConfigPath); err != nil {
+				logrus.Errorln("server parse config failed ", err)
+				return err
 			}
 		}
+
 		return nil
 	}
 	if err := verify(); err != nil {
