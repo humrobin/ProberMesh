@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-ping/ping"
 	"github.com/sirupsen/logrus"
+	"math"
 	"math/rand"
 	"os"
 	"probermesh/pkg/pb"
@@ -392,7 +393,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	pinger.SetNetwork("ip")
 	pinger.Size = defaultICMPSize
 	pinger.Count = defaultICMPCount
-	pinger.Timeout = tm.refreshInterval * 8 / 10 * time.Second
+	pinger.Timeout = time.Duration(math.Ceil(tm.refreshInterval.Seconds() * 8 / 10)) * time.Second
 	pinger.SetPrivileged(true)
 
 	nslookup := time.Now()
