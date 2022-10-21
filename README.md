@@ -59,7 +59,7 @@ cd ProberMesh/cmd/proberMesh && go build -o proberMesh .
         server端ICMP探测目标获取模式(static/dynamic);
         static:  各region下icmp探测地址按照配置文件为准;
         dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，且会覆盖掉配置中同region下原icmp列表;
-         (default "static")
+         (default "dynamic")
   -server.probe.file string
         server端探测列表文件路径
   -server.rpc.addr string
@@ -86,7 +86,7 @@ prober_configs:
 
 
 # server 端使用
-./proberMesh -server.icmp.discovery dynamic -server.probe.file ./prober_mesh.yaml
+./proberMesh
 
 # agent 端使用
 ./proberMesh -mode agent -agent.region ali-cn-shanghai -server.rpc.addr localhost:6000
