@@ -117,7 +117,7 @@ func initArgs() {
 	flag.StringVar(&mode, "mode", "server", "服务模式(agent/server)")
 
 	flag.StringVar(&serverOption.TargetsConfigPath, "server.probe.file", "", "server端探测列表文件路径")
-	flag.StringVar(&serverOption.ICMPDiscoveryType, "server.icmp.discovery", "static", `server端ICMP探测目标获取模式(static/dynamic);
+	flag.StringVar(&serverOption.ICMPDiscoveryType, "server.icmp.discovery", "dynamic", `server端ICMP探测目标获取模式(static/dynamic);
 static:  各region下icmp探测地址按照配置文件为准;
 dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，且会覆盖掉配置中同region下原icmp列表;
 `)

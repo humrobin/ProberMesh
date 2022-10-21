@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"time"
 )
 
@@ -31,10 +32,7 @@ func newHealthCheck(ctx context.Context, r *rpcCli, ready chan struct{}) *health
 }
 
 func (h *healthCheck) report() {
-	ticker := time.NewTicker(healthCheckInterval)
-	defer ticker.Stop()
-
-	do := func() {
+	util.Wait(h.cancel,healthCheckInterval, func() {
 		var msg string
 		err := h.r.Call(
 			"Server.Report",
@@ -47,16 +45,10 @@ func (h *healthCheck) report() {
 		if err != nil {
 			logrus.Errorln("rpc report failed ", err)
 		}
-	}
 
-	do()
-	close(h.ready)
-	for {
-		select {
-		case <-h.cancel.Done():
-			return
-		case <-ticker.C:
-			do()
+		if h.ready != nil {
+			close(h.ready)
+			h.ready = nil
 		}
-	}
+	})
 }

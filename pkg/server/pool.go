@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/sirupsen/logrus"
 	"probermesh/config"
+	"probermesh/pkg/util"
 	"time"
 )
 
@@ -69,11 +70,10 @@ func (t *targetsPool) start() {
 }
 
 func (t *targetsPool) updatePool() {
-	// 每分钟更新次pool值(根据agent上报)
-	ticker := time.NewTicker(time.Duration(1) * time.Minute)
-	defer ticker.Stop()
+	var first = true
 
-	do := func() {
+	// 每分钟更新次pool值(根据agent上报)
+	util.Wait(t.done, time.Duration(1)*time.Minute, func() {
 		var updateKey = "icmp"
 		for region, ipm := range getDiscoverPool() {
 			if len(ipm) == 0 {
@@ -108,21 +108,15 @@ func (t *targetsPool) updatePool() {
 				t.pool[region] = map[string]*config.ProberConfig{updateKey: updatePC}
 			}
 		}
-	}
 
-	<-t.ready
-	do()
-	for {
-		select {
-		case <-t.done.Done():
-			return
-		case <-ticker.C:
-			do()
+		if first {
+			<-t.ready
+			first = false
 		}
-	}
+	})
 }
 
-func (t *targetsPool) GetPool(sourceRegion string) map[string][]*config.ProberConfig {
+func (t *targetsPool) getPool(sourceRegion string) map[string][]*config.ProberConfig {
 	pcs := make(map[string][]*config.ProberConfig)
 	for region, pcm := range t.pool {
 		if region != sourceRegion {

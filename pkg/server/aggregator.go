@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"sync"
 	"time"
 )
@@ -47,19 +48,7 @@ func (a *Aggregator) Enqueue(reqs []*pb.PorberResultReq) {
 }
 
 func (a *Aggregator) startAggregation() {
-	ticker := time.NewTicker(a.aggInterval)
-	defer ticker.Stop()
-
-	a.agg()
-	for {
-		select {
-		case <-a.cancel.Done():
-			return
-		case <-ticker.C:
-			// 定时聚合所有数据
-			a.agg()
-		}
-	}
+	util.Wait(a.cancel,a.aggInterval, a.agg)
 }
 
 func (a *Aggregator) agg() {

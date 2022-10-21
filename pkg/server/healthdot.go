@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"probermesh/pkg/util"
 	"strings"
 	"sync"
 	"time"
@@ -50,31 +51,23 @@ func (h *healthDot) report(region, ip string) {
 }
 
 func (h *healthDot) dot() {
-	ticker := time.NewTicker(h.expires)
-	defer ticker.Stop()
+	util.Wait(h.cancel,h.expires, func() {
+		now := time.Now()
+		for agent, tm := range h.agentPool {
+			meta := strings.Split(agent, defaultKeySeparator)
+			region, ip := meta[0], meta[1]
+			if now.Sub(tm) > h.expires {
+				agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(0)
 
-	for {
-		select {
-		case <-h.cancel.Done():
-			return
-		case <-ticker.C:
-			now := time.Now()
-			for agent, tm := range h.agentPool {
-				meta := strings.Split(agent, defaultKeySeparator)
-				region, ip := meta[0], meta[1]
-				if now.Sub(tm) > h.expires {
-					agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(0)
-
-					h.m.Lock()
-					delete(h.agentPool, agent)
-					delete(h.discoverPool[region], ip)
-					h.m.Unlock()
-				} else {
-					agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(1)
-				}
+				h.m.Lock()
+				delete(h.agentPool, agent)
+				delete(h.discoverPool[region], ip)
+				h.m.Unlock()
+			} else {
+				agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(1)
 			}
 		}
-	}
+	})
 }
 
 func getDiscoverPool() map[string]map[string]struct{} {

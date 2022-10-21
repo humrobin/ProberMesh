@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"probermesh/config"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"time"
 )
 
@@ -52,20 +53,19 @@ func (t *targetManager) start(ctx context.Context) {
 	<-t.beforeReady
 
 	// 定时获取targets
-	go t.sync(ctx)
+	go util.Wait(ctx, t.syncInterval, func() {
+		t.getTargets()
+
+		if t.ready != nil {
+			close(t.ready)
+			t.ready = nil
+		}
+	})
 
 	<-t.ready
 
 	// 定时探测
-	t.prober()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(t.refreshInterval):
-			t.prober()
-		}
-	}
+	util.Wait(ctx, t.refreshInterval, t.prober)
 }
 
 func (t *targetManager) prober() {
@@ -79,20 +79,6 @@ func (t *targetManager) prober() {
 				r:            t.r,
 			}
 			pj.run()
-		}
-	}
-}
-
-func (t *targetManager) sync(ctx context.Context) {
-	t.getTargets()
-	close(t.ready)
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(t.syncInterval):
-			t.getTargets()
 		}
 	}
 }

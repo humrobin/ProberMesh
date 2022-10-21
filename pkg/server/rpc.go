@@ -20,7 +20,7 @@ func (s *Server) Report(req pb.ReportReq, resp *string) error {
 }
 
 func (s *Server) GetTargetPool(req pb.TargetPoolReq, resp *pb.TargetPoolResp) error {
-	tcs := tp.GetPool(req.SourceRegion)
+	tcs := tp.getPool(req.SourceRegion)
 	resp.Targets = tcs
 	return nil
 }
